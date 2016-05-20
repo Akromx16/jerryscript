@@ -17,6 +17,22 @@
 #include <string.h>
 #include <stdlib.h>
 
+int jerryscript_entry (int argc, char *argv[]);
+
 void main() {
     printf("Zephyr entry point");
+    jerryscript_entry(0,NULL);
+
+}
+
+void __attribute__ ((noreturn)) abort() {
+    while(1) {
+
+    };
+}
+
+void __attribute__ ((noreturn)) exit(int value) {
+    while(1) {
+
+    };
 }

@@ -15,7 +15,7 @@
 # use TAB-8
 .DEFAULT_GOAL := all
 
-ZEPHYR     ?= $(CURDIR)/../zephyr/zephry
+ZEPHYR    ?= $(CURDIR)/../zephyr/zephry
 TYPE      ?= release
 JERRYHEAP ?= 64
 
@@ -25,6 +25,8 @@ ZEPHYRLIB   = $(ZEPHYR_BASE)/lib
 SOURCE_DIR = ./targets/arduino_101/src
 
 $(info SOURCE_DIR=$(SOURCE_DIR))
+
+EXTRA_LINKER_CMD_OPT = Hello world
 
 MDEF_FILE = $(SOURCE_DIR)/../prj.mdef
 CONF_FILE = $(SOURCE_DIR)/../prj.conf
@@ -38,4 +40,4 @@ BOARD ?= arduino_101
 APP = main-zephyr.c
 	
 $(info Compiling Zephyr)
-include ${ZEPHYR_BASE}/Makefile.inc
+include ${ZEPHYR_BASE}/Makefile.inc 
