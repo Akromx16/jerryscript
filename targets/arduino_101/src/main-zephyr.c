@@ -16,13 +16,64 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <misc/shell.h>
 
 int jerryscript_entry (int argc, char *argv[]);
+int jerryscript_cmd (int argc, char *argv[]);
 
-void main() {
-    printf("Zephyr entry point");
+#if defined(CONFIG_STDOUT_CONSOLE)
+#include <stdio.h>
+#define PRINT           printf
+#else
+#include <misc/printk.h>
+#define PRINT           printk
+#endif
+
+void
+print_version()
+{
+    printf("Version " __DATE__ __TIME__ " ");
+}
+
+void
+print_help()
+{
+    printf("Help\n");
+}
+
+static void
+shell_cmd_help(int argc, char* argv[])
+{
+    print_help();
+}
+
+static void
+shell_cmd_version(int argc, char* argv[])
+{
+    print_version();
+}
+
+static void
+shell_cmd_execute(int argc, char* argv[])
+{
+    for (int t=0; t<argc; t++) {
+        printf("%d::%s",argc, argv[argc]);
+    }
+
+    if (argc<1)
+        return;
+
+   jerryscript_cmd (argc, argv);
+}
+
+const struct shell_cmd commands[] = { { "syntax", shell_cmd_help },
+                                      { "version", shell_cmd_version },
+                                      { "js", shell_cmd_execute },
+                                      { NULL, NULL } };
+
+void main(void) {
+    shell_init("jerryscript> ", commands);
     jerryscript_entry(0,NULL);
-
 }
 
 void __attribute__ ((noreturn)) abort() {

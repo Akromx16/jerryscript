@@ -27,6 +27,7 @@
 //extern "C" int jerryscript_entry (int argc, char *argv[]);
 
 int jerryscript_entry (int argc, char *argv[]);
+int jerryscript_cmd (int argc, char *argv[]);
 
 /**
  * Maximum command line arguments number
@@ -156,6 +157,20 @@ static char* read_sources (const char *script_file_names[],
 }
 */
 
+int jerryscript_cmd (int argc, char *argv[])
+{
+    jerry_api_object_t *error_obj_p = NULL;
+
+    if (argc<=0) {
+        printf("Not enough params\n");
+    }
+
+    jerry_parse (argv[1], strlen (argv[1]), &error_obj_p);
+    jerry_run (&error_obj_p);
+    jerry_cleanup ();
+    return 0;
+}
+
 int jerryscript_entry (int argc, char *argv[])
 {
   if (argc >= JERRY_MAX_COMMAND_LINE_ARGS)
@@ -178,6 +193,7 @@ int jerryscript_entry (int argc, char *argv[])
   jerry_flag_t flags = JERRY_FLAG_EMPTY;
 
   jerry_init (flags);
+
 
   //jerry_flag_t flags = JERRY_FLAG_EMPTY;
 /*

@@ -78,14 +78,17 @@ jerry:
 	 	 
 	make -C $(INTERM) $(TYPE).external V=1
 	cp `cat $(INTERM)/$(TYPE).external/list` $(OUTPUT)/.
-	cp $(INTERM)/lib$(TYPE).external-entry.a $(OUTPUT)/.
+	cp $(INTERM)/lib$(TYPE).external-entry.a $(OUTPUT)/.	
 
 .PHONY: zephyr
 zephyr:	
 	@echo "- ZEPHYR -------------------------------------------------------------------"
 	make -f ./targets/arduino_101/Makefile O=$(OUTPUT)/zephyr V=1 TOOLCHAIN_LIBS="release.jerry-fdlibm.third_party.lib release.external-entry release.jerry-core $(TOOLCHAIN_LIBS)" LIB_INCLUDE_DIR="$(LIB_INCLUDE_DIR)"
-# LIB_INCLUDE_DIR="$(LIB_INCLUDE_DIR)"
-		 
+	
+flash:	
+	@echo "- ZEPHYR -------------------------------------------------------------------"
+	make -f ./targets/arduino_101/Makefile O=$(OUTPUT)/zephyr V=1 TOOLCHAIN_LIBS="release.jerry-fdlibm.third_party.lib release.external-entry release.jerry-core $(TOOLCHAIN_LIBS)" LIB_INCLUDE_DIR="$(LIB_INCLUDE_DIR)" flash
+
 showconfig:
 	@echo =================================================
 	@echo INTERM = $(INTERM) 
@@ -105,7 +108,8 @@ clean:
 	@rm -rf $(INTERM)
 
 	@echo "Clearing Zephyr"
-	make -f ./targets/arduino_101/Makefile clean	
+	make -f ./targets/arduino_101/Makefile clean
+	make -f ./targets/arduino_101/Makefile pristine	
 	
 mrproper: 	
 	make -f ./targets/arduino_101/Makefile mrproper
