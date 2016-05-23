@@ -17,7 +17,7 @@
 
 ZEPHYR    ?= $(CURDIR)/../zephyr/zephry
 TYPE      ?= release
-JERRYHEAP ?= 64
+JERRYHEAP ?= 16
 
 ZEPHYRINC   = $(ZEPHYR_BASE)/include
 ZEPHYRLIB   = $(ZEPHYR_BASE)/lib

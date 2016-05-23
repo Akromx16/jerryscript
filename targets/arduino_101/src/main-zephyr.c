@@ -20,6 +20,7 @@
 
 int jerryscript_entry (int argc, char *argv[]);
 int jerryscript_cmd (int argc, char *argv[]);
+int jerryscript_test (int argc, char *argv[]);
 
 #if defined(CONFIG_STDOUT_CONSOLE)
 #include <stdio.h>
@@ -56,19 +57,28 @@ shell_cmd_version(int argc, char* argv[])
 static void
 shell_cmd_execute(int argc, char* argv[])
 {
+    printf("START %d\n", argc);
     for (int t=0; t<argc; t++) {
-        printf("%d::%s",argc, argv[argc]);
+        printf("%d[%s]\n",t, argv[t]);
     }
 
     if (argc<1)
         return;
 
    jerryscript_cmd (argc, argv);
+   printf("END\n");
+}
+
+static void
+shell_cmd_test(int argc, char* argv[])
+{
+    jerryscript_test(argc, argv);
 }
 
 const struct shell_cmd commands[] = { { "syntax", shell_cmd_help },
                                       { "version", shell_cmd_version },
                                       { "js", shell_cmd_execute },
+                                      { "test", shell_cmd_test },
                                       { NULL, NULL } };
 
 void main(void) {

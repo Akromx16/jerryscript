@@ -22,12 +22,67 @@
 #include "jrt/jrt.h"
 
 /**
+ * memcmp
+ *
+ * @return 0, if areas are equal;
+ *         <0, if first area's content is lexicographically less, than second area's content;
+ *         >0, otherwise
+ */
+int
+memcmp (const void *s1, /**< first area */
+        const void *s2, /**< second area */
+        size_t n) /**< area size */
+{
+  const uint8_t *area1_p = (uint8_t *) s1, *area2_p = (uint8_t *) s2;
+  while (n--)
+  {
+    int diff = ((int) *area1_p++) - ((int) *area2_p++);
+    if (diff)
+    {
+      return diff;
+    }
+  }
+
+  return 0;
+} /* memcmp */
+
+/**
+ * State of pseudo-random number generator
+ */
+static uint32_t libc_random_gen_state[4] = { 1455997910, 1999515274, 1234451287, 1949149569 };
+
+/**
+ * Generate pseudo-random integer
+ *
+ * Note:
+ *      The function implements George Marsaglia's XorShift random number generator
+ *
+ * @return integer in range [0; RAND_MAX]
+ */
+int
+rand (void)
+{
+  uint32_t intermediate = libc_random_gen_state[0] ^ (libc_random_gen_state[0] << 11);
+  intermediate ^= intermediate >> 8;
+
+  libc_random_gen_state[0] = libc_random_gen_state[1];
+  libc_random_gen_state[1] = libc_random_gen_state[2];
+  libc_random_gen_state[2] = libc_random_gen_state[3];
+
+  libc_random_gen_state[3] ^= libc_random_gen_state[3] >> 19;
+  libc_random_gen_state[3] ^= intermediate;
+
+  return libc_random_gen_state[3] % (RAND_MAX + 1u);
+} /* rand */
+
+typedef uint64_t jmp_buf[14];
+
+/**
  * The module interface routine
  */
-//extern "C" int jerryscript_entry (int argc, char *argv[]);
-
 int jerryscript_entry (int argc, char *argv[]);
 int jerryscript_cmd (int argc, char *argv[]);
+int jerryscript_test (int argc, char *argv[]);
 
 /**
  * Maximum command line arguments number
@@ -39,135 +94,37 @@ int jerryscript_cmd (int argc, char *argv[]);
  */
 #define JERRY_STANDALONE_EXIT_CODE_OK   (0)
 #define JERRY_STANDALONE_EXIT_CODE_FAIL (1)
-/*
-static char* read_sources (const char *script_file_names[],
-                           int files_count,
-                           size_t *out_source_size_p)
-{
-  int i;
-  char* source_buffer = NULL;
-  char *source_buffer_tail = NULL;
-  size_t total_length = 0;
-  FILE *file = NULL;
 
-  for (i = 0; i < files_count; i++)
-  {
-    const char *script_file_name = script_file_names[i];
+int jerryscript_test (int argc, char *argv[]) {
+    if (argc<=0 || argv==NULL) return 0;
 
-    file = fopen (script_file_name, "r");
-    if (file == NULL)
-    {
-      JERRY_ERROR_MSG ("Failed to fopen [%s]\n", script_file_name);
-      return NULL;
-    }
+    const char script [] = "print ('Hi JS!');";
+    //const char script [] = "1+1;";
+    jerry_completion_code_t ret_code;
 
-    int fseek_status = fseek (file, 0, SEEK_END);
-    if (fseek_status != 0)
-    {
-      JERRY_ERROR_MSG ("Failed to fseek fseek_status(%d)\n", fseek_status);
-      fclose (file);
-      return NULL;
-    }
-
-    long script_len = ftell (file);
-    if (script_len < 0)
-    {
-      JERRY_ERROR_MSG ("Failed to ftell script_len(%ld)\n", script_len);
-      fclose (file);
-      break;
-    }
-
-    total_length += (size_t)script_len;
-
-    fclose (file);
-    file = NULL;
-  }
-
-  if (total_length <= 0)
-  {
-    JERRY_ERROR_MSG ("Theres noting to read\n");
-    return NULL;
-  }
-
-  source_buffer = (char*)malloc(total_length);
-  if (source_buffer == NULL)
-  {
-    JERRY_ERROR_MSG ("Out of memory error\n");
-    return NULL;
-  }
-  memset(source_buffer, 0, sizeof(char)*total_length);
-  source_buffer_tail = source_buffer;
-
-  for (i = 0; i < files_count; i++)
-  {
-    const char *script_file_name = script_file_names[i];
-    file = fopen (script_file_name, "r");
-
-    if (file == NULL)
-    {
-      JERRY_ERROR_MSG ("Failed to fopen [%s]\n", script_file_name);
-      break;
-    }
-
-    int fseek_status = fseek (file, 0, SEEK_END);
-    if (fseek_status != 0)
-    {
-      JERRY_ERROR_MSG ("Failed to fseek fseek_status(%d)\n", fseek_status);
-      break;
-    }
-
-    long script_len = ftell (file);
-    if (script_len < 0)
-    {
-      JERRY_ERROR_MSG ("Failed to ftell script_len(%ld)\n", script_len);
-      break;
-    }
-
-    rewind (file);
-
-    const size_t current_source_size = (size_t)script_len;
-    size_t bytes_read = fread (source_buffer_tail, 1, current_source_size, file);
-    if (bytes_read < current_source_size)
-    {
-      JERRY_ERROR_MSG ("Failed to fread bytes_read(%d)\n", bytes_read);
-      break;
-    }
-
-    fclose (file);
-    file = NULL;
-
-    source_buffer_tail += current_source_size;
-  }
-
-  if (file != NULL)
-  {
-    fclose (file);
-  }
-
-  if (i < files_count)
-  {
-    JERRY_ERROR_MSG ("Failed to read script N%d\n", i + 1);
-    free(source_buffer);
-    return NULL;
-  }
-
-  *out_source_size_p = (size_t)total_length;
-
-  return source_buffer;
+    ret_code = jerry_run_simple ((jerry_api_char_t *) script, strlen(script), JERRY_FLAG_EMPTY);
+    return ret_code;
 }
-*/
 
 int jerryscript_cmd (int argc, char *argv[])
 {
-    jerry_api_object_t *error_obj_p = NULL;
+    printf("jerryscript_cmd \n");
 
-    if (argc<=0) {
+    if (argc<=0 || argv == NULL) {
         printf("Not enough params\n");
     }
 
+    /*
+    jerry_api_object_t *error_obj_p = NULL;
+    jerry_completion_code_t ret_code;
+
+    printf("Parse [%s]\n", argv[1]);
     jerry_parse (argv[1], strlen (argv[1]), &error_obj_p);
+    printf("Run \n");
     jerry_run (&error_obj_p);
+    printf("Cleanup \n");
     jerry_cleanup ();
+    */
     return 0;
 }
 
@@ -191,9 +148,9 @@ int jerryscript_entry (int argc, char *argv[])
   }
 
   jerry_flag_t flags = JERRY_FLAG_EMPTY;
-
   jerry_init (flags);
 
+  printf("Init jerryscript_entry\n");
 
   //jerry_flag_t flags = JERRY_FLAG_EMPTY;
 /*

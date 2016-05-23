@@ -20,20 +20,24 @@ endif
 
 BOARD ?= arduino_101
 TYPE  ?= release
-JERRYHEAP ?= 32
+JERRYHEAP ?= 16
+VERSION ?= -cp_minimal
 
 INTERM     = build/$(BOARD)/obj-arduino_101
 OUTPUT     = build/$(BOARD)/
 CONFIG_TOOLCHAIN_VARIANT = iamcu
 
-EXT_CFLAGS := -fno-asynchronous-unwind-tables -fno-omit-frame-pointer
+# 
+ 
+EXT_CFLAGS := -fno-asynchronous-unwind-tables -fno-omit-frame-pointer -march=lakemont -mtune=lakemont -msoft-float 
 EXT_CFLAGS += -Wall -Wno-format-zero-length -ffreestanding
-EXT_CFLAGS += -Os -fno-stack-protector -march=lakemont -mtune=lakemont
-EXT_CFLAGS += -msoft-float -miamcu -ffunction-sections -fdata-sections 
+EXT_CFLAGS += -fno-stack-protector
+EXT_CFLAGS += -miamcu -ffunction-sections -fdata-sections 
 EXT_CFLAGS += -mpreferred-stack-boundary=2 -mno-sse -Wno-unused-but-set-variable 
 EXT_CFLAGS += -fno-reorder-functions -fno-defer-pop -Wno-pointer-sign -fno-strict-overflow
-EXT_CFLAGS += -Werror=format -Werror=implicit-int   
-EXT_CFLAGS += -Wno-main 
+EXT_CFLAGS += -Werror=format -Werror=implicit-int  
+EXT_CFLAGS += -Wno-main
+EXT_CFLAGS += -fno-inline-functions
 
 -include $(ZEPHYR_BASE)/boards/$(BOARD)/Makefile.board
 -include $(ZEPHYR_BASE)/scripts/Makefile.toolchain.$(ZEPHYR_GCC_VARIANT)
@@ -44,13 +48,14 @@ EXT_CFLAGS += $(TOOLCHAIN_CFLAGS)
 EXT_CFLAGS += $(LIB_INCLUDE_DIR)
 EXT_CFLAGS += -nostdinc -isystem $(shell $(CC) -print-file-name=include)
 EXT_CFLAGS += -isystem $(shell $(CC) -print-file-name=include-fixed)
-EXT_CFLAGS += -Os
 
 ZEPHYR_LIBC_INC = $(subst -I,,$(TOOLCHAIN_CFLAGS))
 LIB_INCLUDE_DIR += -L $(CURDIR)/$(OUTPUT)
 
 # CMAKE verbose
 # -DCMAKE_VERBOSE_MAKEFILE=1
+
+# Add libs with longjmp and setjmp -DEXTERNAL_LIBS_INTERFACE="$(ESP_LIBS_INC)" \
 
 .PHONY: all
 all: jerry zephyr
@@ -74,20 +79,23 @@ jerry:
 	 -DEXTERNAL_COMPILE_FLAGS="$(EXT_CFLAGS)" \
 	 -DEXTERNAL_LIBC_INTERFACE="$(ZEPHYR_LIBC_INC)" \
 	 -DEXTERNAL_CMAKE_SYSTEM_PROCESSOR=x86 \
-	 -DEXTERNAL_MEM_HEAP_SIZE_KB=$(JERRYHEAP)
+	 -DEXTERNAL_MEM_HEAP_SIZE_KB=$(JERRYHEAP) \
+	 -DSTRIP_RELEASE_BINARY=ON
 	 	 
-	make -C $(INTERM) $(TYPE).external V=1
-	cp `cat $(INTERM)/$(TYPE).external/list` $(OUTPUT)/.
-	cp $(INTERM)/lib$(TYPE).external-entry.a $(OUTPUT)/.	
+	make -C $(INTERM) $(TYPE).external$(VERSION) V=1	
+	cp `cat $(INTERM)/$(TYPE).external$(VERSION)/list` $(OUTPUT)/.
+	cp $(INTERM)/lib$(TYPE).external$(VERSION)-entry.a $(OUTPUT)/.	
 
 .PHONY: zephyr
 zephyr:	
 	@echo "- ZEPHYR -------------------------------------------------------------------"
-	make -f ./targets/arduino_101/Makefile O=$(OUTPUT)/zephyr V=1 TOOLCHAIN_LIBS="release.jerry-fdlibm.third_party.lib release.external-entry release.jerry-core $(TOOLCHAIN_LIBS)" LIB_INCLUDE_DIR="$(LIB_INCLUDE_DIR)"
-	
+	make -f ./targets/arduino_101/Makefile O=$(OUTPUT)/zephyr V=1 TOOLCHAIN_LIBS="release.external$(VERSION)-entry release$(VERSION).jerry-core release$(VERSION).jerry-fdlibm.third_party.lib $(TOOLCHAIN_LIBS)" LIB_INCLUDE_DIR="$(LIB_INCLUDE_DIR)"
+	@echo "Finished"
+	file $(OUTPUT)/zephyr/zephyr.strip
+	size $(OUTPUT)/zephyr/zephyr.strip	
 flash:	
 	@echo "- ZEPHYR -------------------------------------------------------------------"
-	make -f ./targets/arduino_101/Makefile O=$(OUTPUT)/zephyr V=1 TOOLCHAIN_LIBS="release.jerry-fdlibm.third_party.lib release.external-entry release.jerry-core $(TOOLCHAIN_LIBS)" LIB_INCLUDE_DIR="$(LIB_INCLUDE_DIR)" flash
+	make -f ./targets/arduino_101/Makefile O=$(OUTPUT)/zephyr V=1 TOOLCHAIN_LIBS="release.external$(VERSION)-entry release$(VERSION).jerry-core release$(VERSION).jerry-fdlibm.third_party.lib $(TOOLCHAIN_LIBS)" LIB_INCLUDE_DIR="$(LIB_INCLUDE_DIR)" flash
 
 showconfig:
 	@echo =================================================
