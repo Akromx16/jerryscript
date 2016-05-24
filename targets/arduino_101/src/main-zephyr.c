@@ -32,9 +32,10 @@
 /**
  * Jerryscript simple test loop
  */
-int jerryscript_test () {
-    const char script [] = "for (t=0; t<10; t++) print ('Hi JS! '+(t+1));";
+int jerryscript_test ()
+{
     jerry_completion_code_t ret_code;
+    const char script [] = "print('= Hi Js!='); for (t=0; t<10; t++) print ('t='+(t+1));";
     ret_code = jerry_run_simple ((jerry_api_char_t *) script, strlen(script), JERRY_FLAG_EMPTY);
     return ret_code;
 }
@@ -70,7 +71,7 @@ shell_cmd_handler(int argc, char* argv[])
     if (argc<1)
         return;
 
-   printf("END\n");
+    printf("END\n");
 }
 
 const struct shell_cmd commands[] = { { "syntax", shell_cmd_syntax_help },
@@ -78,7 +79,8 @@ const struct shell_cmd commands[] = { { "syntax", shell_cmd_syntax_help },
                                       { "test", shell_cmd_test },
                                       { NULL, NULL } };
 
-void main(void) {
+void main(void)
+{
     printf("Jerry Compilation " __DATE__ " " __TIME__ "\n");
     jerry_flag_t flags = JERRY_FLAG_EMPTY;
     jerry_init (flags);
@@ -86,10 +88,12 @@ void main(void) {
     shell_init("js> ", commands);
 }
 
-void __attribute__ ((noreturn)) abort() {
+void __attribute__ ((noreturn)) abort()
+{
     while(1) { };
 }
 
-void __attribute__ ((noreturn)) exit(int value) {
+void __attribute__ ((noreturn)) exit(int value)
+{
     while(1) { };
 }
