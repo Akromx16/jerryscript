@@ -92,3 +92,13 @@ rand (void)
 
   return libc_random_gen_state[3] % (RAND_MAX + 1u);
 } /* rand */
+
+void __attribute__ ((noreturn)) abort() {
+    while (1) {
+    };
+}
+
+void __attribute__ ((noreturn)) exit(int value) {
+    while (1) {
+    };
+}

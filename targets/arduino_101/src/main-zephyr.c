@@ -31,78 +31,82 @@
 #define PRINT           printk
 #endif
 
+static char *source_buffer = NULL;
+
 /**
  * Jerryscript simple test loop
  */
-int jerryscript_test ()
-{
+int jerryscript_test() {
     jerry_completion_code_t ret_code;
-    const char script [] = "print('= Hi Js!='); for (t=0; t<10; t++) print ('t='+(t+1));";
-    ret_code = jerry_run_simple ((jerry_api_char_t *) script, strlen(script), JERRY_FLAG_EMPTY);
+    const char script[] =
+            "print('= Hi Js!='); for (t=0; t<10; t++) print ('t='+(t+1));";
+    ret_code = jerry_run_simple((jerry_api_char_t *) script, strlen(script),
+            JERRY_FLAG_EMPTY);
     return ret_code;
 }
 
-static int
-shell_cmd_syntax_help(int argc, char* argv[])
-{
+static int shell_cmd_syntax_help(int argc, char* argv[]) {
     printf("version jerryscript & zephyr versions\n");
     return 0;
 }
 
-static int
-shell_cmd_version(int argc, char* argv[])
-{
+static int shell_cmd_version(int argc, char* argv[]) {
     uint32_t version = sys_kernel_version_get();
 
-    printf("Jerryscript %s %s %s\n", jerry_branch_name, jerry_build_date, jerry_commit_hash);
-    printk("Zephyr version %d.%d.%d\n",
-            SYS_KERNEL_VER_MAJOR(version),
-            SYS_KERNEL_VER_MINOR(version),
-            SYS_KERNEL_VER_PATCHLEVEL(version));
+    printf("Jerryscript %s %s %s\n", jerry_branch_name, jerry_build_date,
+            jerry_commit_hash);
+    printk("Zephyr version %d.%d.%d\n", SYS_KERNEL_VER_MAJOR(version),
+            SYS_KERNEL_VER_MINOR(version), SYS_KERNEL_VER_PATCHLEVEL(version));
     return 0;
 }
 
-static int
-shell_cmd_test(int argc, char* argv[])
-{
+static int shell_cmd_test(int argc, char* argv[]) {
     return jerryscript_test();
 }
 
-static int
-shell_cmd_handler(int argc, char* argv[])
-{
-    printf("START %d\n", argc);
-    for (int t=0; t<argc; t++) {
-        printf("%d[%s]\n",t, argv[t]);
-    }
-
-    if (argc<1)
+static int shell_cmd_handler(int argc, char* argv[]) {
+    if (argc <= 0)
         return -1;
 
-    printf("END\n");
+    if (source_buffer != NULL)
+        free(source_buffer);
+
+    unsigned int size = 0;
+    for (int t = 0; t < argc; t++)
+        size += strlen(argv[t]) + 1;
+
+    source_buffer = (char*) malloc(size);
+
+    char *d = source_buffer;
+    unsigned int len;
+    for (int t = 0; t < argc; t++) {
+        len = strlen(argv[t]);
+        memcpy(d, argv[t], len);
+        d += len;
+        *d = ' ';
+        d++;
+    }
+    *(d - 1) = '\0';
+
+    printf("[%s]%lu", source_buffer, strlen(source_buffer));
+
+    jerry_completion_code_t ret_code;
+
+    ret_code = jerry_run_simple((jerry_api_char_t *) source_buffer,
+            strlen(source_buffer), JERRY_FLAG_EMPTY);
+
+    if (ret_code != JERRY_COMPLETION_CODE_OK) {
+        printf("Failed to run JS\n");
+    }
     return 0;
 }
 
-const struct shell_cmd commands[] = { { "syntax", shell_cmd_syntax_help },
-                                      { "version", shell_cmd_version },
-                                      { "test", shell_cmd_test },
-                                      { NULL, NULL } };
+const struct shell_cmd commands[] = { { "syntax", shell_cmd_syntax_help }, {
+        "version", shell_cmd_version }, { "test", shell_cmd_test },
+        { NULL, NULL } };
 
-void main(void)
-{
+void main(void) {
     printf("Jerry Compilation " __DATE__ " " __TIME__ "\n");
-    jerry_flag_t flags = JERRY_FLAG_EMPTY;
-    jerry_init (flags);
     shell_register_app_cmd_handler(shell_cmd_handler);
     shell_init("js> ", commands);
-}
-
-void __attribute__ ((noreturn)) abort()
-{
-    while(1) { };
-}
-
-void __attribute__ ((noreturn)) exit(int value)
-{
-    while(1) { };
 }
